@@ -83,19 +83,19 @@ At the end of the round:
 ## Game Parameters
 
 ```cpp
-nb_players()    // number of players (4)
-rows()          // number of rows of the board (70)
-columns()       // number of columns of the board (70)
-nb_rounds()     // number of rounds of the match (200)
+nb_players();    // number of players (4)
+rows();          // number of rows of the board (70)
+columns();       // number of columns of the board (70)
+nb_rounds();     // number of rounds of the match (200)
 
-initial_health()    // initial health of each ork (100)
-cost_grass()        // cost in health of moving to a cell of type GRASS (1)
-cost_forest()       // cost in health of moving to a cell of type FOREST (2)
-cost_sand()         // cost in health of moving to a cell of type SAND (3)
-cost_city()         // cost in health of moving to a cell of type CITY (0)
-cost_path()         // cost in health of moving to a cell of type PATH (0)
+initial_health();    // initial health of each ork (100)
+cost_grass();        // cost in health of moving to a cell of type GRASS (1)
+cost_forest();       // cost in health of moving to a cell of type FOREST (2)
+cost_sand();         // cost in health of moving to a cell of type SAND (3)
+cost_city();         // cost in health of moving to a cell of type CITY (0)
+cost_path();         // cost in health of moving to a cell of type PATH (0)
 
-bonus_per_city_cell()   // bonus in points for each cell in a conquered city (1)
-bonus_per_path_cell()   // bonus in points for each cell in a conquered path (1)
-factor_connected_component()    // factor multiplying the size of the connected components (2)
+bonus_per_city_cell();   // bonus in points for each cell in a conquered city (1)
+bonus_per_path_cell();   // bonus in points for each cell in a conquered path (1)
+factor_connected_component();    // factor multiplying the size of the connected components (2)
 ```
