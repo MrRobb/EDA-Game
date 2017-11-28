@@ -83,19 +83,132 @@ At the end of the round:
 ## Game Parameters
 
 ```cpp
-nb_players();    // number of players (4)
-rows();          // number of rows of the board (70)
-columns();       // number of columns of the board (70)
-nb_rounds();     // number of rounds of the match (200)
+int nb_players () const;    // number of players (4)
+int rows () const;          // number of rows of the board (70)
+int cols () const;       // number of columns of the board (70)
+int nb_rounds () const;     // number of rounds of the match (200)
 
-initial_health();    // initial health of each ork (100)
-cost_grass();        // cost in health of moving to a cell of type GRASS (1)
-cost_forest();       // cost in health of moving to a cell of type FOREST (2)
-cost_sand();         // cost in health of moving to a cell of type SAND (3)
-cost_city();         // cost in health of moving to a cell of type CITY (0)
-cost_path();         // cost in health of moving to a cell of type PATH (0)
+int initial_health () const;    // initial health of each ork (100)
+int nb_orks () const;           // number of orks each player controls initially
 
-bonus_per_city_cell();   // bonus in points for each cell in a conquered city (1)
-bonus_per_path_cell();   // bonus in points for each cell in a conquered path (1)
-factor_connected_component();    // factor multiplying the size of the connected components (2)
+int cost (CellType t) const;
+int cost_grass () const;        // cost in health of moving to a cell of type GRASS (1)
+int cost_forest () const;       // cost in health of moving to a cell of type FOREST (2)
+int cost_sand () const;         // cost in health of moving to a cell of type SAND (3)
+int cost_city () const;         // cost in health of moving to a cell of type CITY (0)
+int cost_path () const;         // cost in health of moving to a cell of type PATH (0)
+
+int bonus_per_city_cell () const;   // bonus in points for each cell in a conquered city (1)
+int bonus_per_path_cell () const;   // bonus in points for each cell in a conquered path (1)
+int factor_connected_component () const;    // factor multiplying the size of the connected components (2)
+
+bool player_ok (int pl) const;      // is playerid okay?
+bool pos_ok (int i, int j) const;   // is position inside the board
+bool pos_ok (Pos p) const;          // is position inside the board
+int me ();                          // returns my id
+```
+
+## State.hh
+
+```cpp
+// GENERAL
+int round () const;                 // current round
+int total_score (int pl) const;     // score of a player
+double status (int pl) const;       // percentage of cpu time used in the last round (0..1) if < 0 ---> user is dead
+vector<int> orks(int pl);           // returns the ids of all the orks of a player
+
+
+// CELL
+Cell cell (int i, int j) const;     // copy of the cell (i, j)
+Cell cell (Pos p) const;            // copy of the cell p
+
+
+// UNIT
+Unit unit (int id) const;           // returns information about the unit (0..nb_units())
+int nb_units () const;              // total number of orks in the game
+
+
+// CITY
+typedef vector<Pos>  City;          // CITY
+City city(int id) const;            // returns information about the city (0..nb_cities())
+int nb_cities () const;             // total number of cities in the game
+int city_owner(int id) const;       // city owner
+
+
+// PATH
+typedef pair< pair<int,int>, vector<Pos> >  Path;   // PATH
+Path path(int id) const;            // returns information about the path (0..nb_paths())
+int nb_paths () const;              // total number of paths in the game
+int path_owner(int id) const;       // path owner
+```
+
+## Action.hh
+
+```cpp
+// COMMAND
+Command (int id, Dir dir);          // create command (ork --> direction)
+void execute(Command m);            // add command to the action (fails if a command is already present for this unit)
+```
+
+## Structs.hh
+
+```cpp
+// DIR
+enum Dir {
+  BOTTOM,    // South
+  RIGHT,     // East
+  TOP,       // North
+  LEFT,      // West
+  NONE,      // No direction
+  DIR_SIZE   // Artificial value, for iterating.
+};
+inline bool dir_ok (Dir dir);       // is_valid(direction)
+
+
+// POS
+Pos (int i, int j);                                         // create position
+friend ostream& operator<< (ostream& os, const Pos& p);     // print
+friend bool operator== (const Pos& a, const Pos& b);        // equal
+friend bool operator!= (const Pos& a, const Pos& b);        // not equal
+friend bool operator< (const Pos& a, const Pos& b);         // less than (sorting)
+Pos& operator+= (Dir d);                                    // Increment to direction
+Pos operator+ (Dir d) const;                                // Add direction
+Pos& operator+= (Pos p);                                    // Increment position
+Pos operator+ (Pos p) const;                                // Add position
+
+
+// CELL
+enum CellType {
+  WATER,
+  GRASS,
+  FOREST,
+  SAND,
+  CITY,
+  PATH,
+  CELL_TYPE_SIZE  // Artificial value, for iterating.
+};
+Cell (CellType t, int unit, int city, int path);            // create cell
+/*
+    CellType type; // The type of cell.
+    int   unit_id; // The id of the unit on the cell if any, -1 otherwise.
+    int   city_id; // If type == CITY, the id of the city, -1 otherwise.
+    int   path_id; // If type == PATH, the id of the path, -1 otherwise.
+*/
+
+
+// UNIT
+Unit (int id, int pl, Pos p = Pos(0, 0), int health = 0);   // create unit
+/*
+    int id;        // The unique id for this unit during the game.
+    int player;    // The player that owns this unit.
+    Pos pos;       // The position on the board.
+    int health;    // The health of the unit.
+*/
+```
+
+## Settings.hh
+
+```cpp
+static string version ();   // game name and version
+int nb_players () const;    // number of players
 ```
