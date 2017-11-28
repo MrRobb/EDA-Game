@@ -3,3 +3,4 @@
 *.o
 game/Game
 *.deps
+.DS_Store
