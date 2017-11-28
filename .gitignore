@@ -4,3 +4,4 @@
 game/Game
 *.deps
 .DS_Store
+*.gch
