@@ -355,7 +355,7 @@ struct PLAYER_NAME : public Player {
 		cerr << "INIT STARTED" << endl;
 		init();
 		cerr << "INIT FINISHED" << endl;
-		for (int i = 0; i < my_units and instruction < 1000; i++) {
+		for (int i = 0; i < my_units; i++) {
 			execute(Command(my_orks[i], decide_direction(my_orks[i])));
 			instruction++;
 		}
