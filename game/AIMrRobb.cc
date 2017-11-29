@@ -33,11 +33,14 @@ struct PLAYER_NAME : public Player {
 	}
 	
 	/////////////////////////////// COMPUTE
-	Pos which_city(int ork) {
+	Pos which_city(int ork)
+	{
 		int cell_i = -1;
 		int cell_j = -1;
+		
 		int ork_i = unit(ork).pos.i;
 		int ork_j = unit(ork).pos.j;
+		
 		for (int i = 0; i < rows(); i++) {
 			for (int j = 0; j < cols(); j++)
 			{
@@ -45,7 +48,7 @@ struct PLAYER_NAME : public Player {
 				Cell temp = cell(i, j);
 				
 				// Check if city
-				if (temp.city_id != -1)
+				if (temp.city_id != -1 and city_owner(temp.city_id) != me())
 				{
 					// Distance
 					if (cell_i == -1 or abs(i - ork_i) + abs(j - ork_j) < abs(cell_i - ork_i) + abs(cell_j - ork_j)) {
@@ -70,7 +73,7 @@ struct PLAYER_NAME : public Player {
 				Cell temp = cell(i, j);
 				
 				// Check if city
-				if (temp.path_id != -1)
+				if (temp.path_id != -1 and path_owner(temp.path_id) != me())
 				{
 					// Distance
 					if (path_i == -1 or abs(i - ork_i) + abs(j - ork_j) < abs(path_i - ork_i) + abs(path_j - ork_j)) {
