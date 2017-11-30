@@ -120,32 +120,27 @@ struct PLAYER_NAME : public Player {
 			row = temp_row;
 			col = temp_col;
 		}
-		cerr << "Found" << endl;
+		
 		if (path.top().first - src.i == -1 and path.top().second == src.j) {
-			cerr << "TOP" << endl;
 			return TOP;
 		}
 		
 		if (path.top().first - src.i == 1  and path.top().second == src.j) {
-			cerr << "BOTTOM" << endl;
 			return BOTTOM;
 		}
 		
 		if (path.top().first == src.i and path.top().second - src.j == 1 ) {
-			cerr << "RIGHT" << endl;
 			return RIGHT;
 		}
 		
 		if (path.top().first == src.i and path.top().second - src.j == -1) {
-			cerr << "LEFT" << endl;
 			return LEFT;
 		}
-		cerr << "ERROR" << endl;
+		
 		return DIR_SIZE;
 	}
 	
 	Dir find_my_way(Pos src, Pos dst) {
-		cerr << "Finding my way from " << src << " to " << dst << endl;
 		if (not pos_ok(src)) return DIR_SIZE;
 		if (not pos_ok(dst)) return DIR_SIZE;
 		if (src == dst) return NONE;
@@ -173,6 +168,7 @@ struct PLAYER_NAME : public Player {
 		bool foundDest = false;
 		
 		while (not openList.empty()) {
+			cerr << "SIZE: " << openList.size() << endl;
 			pair< int, pair<int, int> > p = *openList.begin();
 			
 			openList.erase(openList.begin());
@@ -305,17 +301,14 @@ struct PLAYER_NAME : public Player {
 	}
 	
 	Dir decide_direction(int ork) {
-		cerr << "ork_id: " << ork << endl;
 		Dir d = DIR_SIZE;
 		do {
 			Pos c = which_city(ork);
 			Pos p = which_path(ork);
 			
-			cerr << "finding from " << unit(ork).pos << " to " << c  << " or " << p << endl;
 			// EQUAL (default --> city)
 			if (bonus_per_city_cell() == bonus_per_path_cell())
 			{
-				// TO-DO: SHORTEST DISTANCE (city vs path)
 				int dist_ork_city = abs(c.i - unit(ork).pos.i) + abs(c.j - unit(ork).pos.j);
 				int dist_ork_path = abs(p.i - unit(ork).pos.i) + abs(p.j - unit(ork).pos.j);
 				
@@ -341,7 +334,6 @@ struct PLAYER_NAME : public Player {
 				d = find_my_way(unit(ork).pos, p);
 			}
 			
-			if (d == DIR_SIZE) cerr << "is DIR_SIZE :(" << endl;
 		} while (d == DIR_SIZE);
 		
 		return d;
@@ -352,9 +344,7 @@ struct PLAYER_NAME : public Player {
     * Play method, invoked once per each round.
     */
     virtual void play () {
-		cerr << "INIT STARTED" << endl;
 		init();
-		cerr << "INIT FINISHED" << endl;
 		for (int i = 0; i < my_units; i++) {
 			execute(Command(my_orks[i], decide_direction(my_orks[i])));
 			instruction++;
