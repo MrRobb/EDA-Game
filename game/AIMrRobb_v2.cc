@@ -353,7 +353,7 @@ struct PLAYER_NAME : public Player {
 		Unit e = which_enemy(ork);
 		// cerr << "FINISH WHICH ENEMY" << endl;
 		
-		if (my_actions[ork] == 1 and manhattan_distance(e.pos, unit(ork).pos) < 4) {
+		if (my_actions[ork] == 1 and manhattan_distance(e.pos, unit(ork).pos) < 4 and e.health < unit(ork).health) {
 			// cerr << "FIGHT from " << unit(ork).pos << " to " << e.pos << endl;
 			d = find_my_way(unit(ork).pos, e.pos, ork);
 		}
