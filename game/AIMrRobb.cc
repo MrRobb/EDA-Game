@@ -167,7 +167,7 @@ struct PLAYER_NAME : public Player {
 		openList.insert(make_pair(0, make_pair(src.i, src.j)));
 		bool foundDest = false;
 		
-		while (not openList.empty()) {
+		while (not openList.empty() and openList.size() < 30) {
 			cerr << "SIZE: " << openList.size() << endl;
 			pair< int, pair<int, int> > p = *openList.begin();
 			
@@ -297,7 +297,7 @@ struct PLAYER_NAME : public Player {
 			}
 		}
 		
-		return DIR_SIZE;
+		return NONE;
 	}
 	
 	Dir decide_direction(int ork) {
