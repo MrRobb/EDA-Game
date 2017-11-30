@@ -168,7 +168,6 @@ struct PLAYER_NAME : public Player {
 		bool foundDest = false;
 		
 		while (not openList.empty() and openList.size() < 30) {
-			cerr << "SIZE: " << openList.size() << endl;
 			pair< int, pair<int, int> > p = *openList.begin();
 			
 			openList.erase(openList.begin());
