@@ -1,21 +1,29 @@
-make
+make > /dev/null
+
+PLAYER="MrRobb_v3"
+ENEMY="MrRobb_v2"
+
+echo "\n$PLAYER vs $ENEMY\n"
 
 echo "200 rounds";
 
 for (( i = 0; i < 100; i++ )); do
-    echo "$i " | tr -d '\n' && ./Game MrRobb_v2 Dummy Dummy Dummy --seed $i < default.cnf > default.out 2> cerr.out && grep "Dummy got top score" cerr.out;
+    RNUM=$(od -An -N4 -tu2 /dev/urandom | awk '{print $1}')
+    echo "$i with seed $RNUM" && ./Game $PLAYER $ENEMY $ENEMY $ENEMY --seed $RNUM < default.cnf > default.out 2> cerr.out && grep "$ENEMY got top score" cerr.out;
 done
 
 echo "400 rounds";
 
 for (( i = 0; i < 100; i++ )); do
-    echo "$i " | tr -d '\n' && ./Game MrRobb_v2 Dummy Dummy Dummy --seed $i < default400.cnf > default.out 2> cerr.out && grep "Dummy got top score" cerr.out;
+    RNUM=$(od -An -N4 -tu2 /dev/urandom | awk '{print $1}')
+    echo "$i with seed $RNUM" && ./Game $PLAYER $ENEMY $ENEMY $ENEMY --seed $RNUM < default400.cnf > default.out 2> cerr.out && grep "$ENEMY got top score" cerr.out;
 done
 
 echo "1000 rounds";
 
 for (( i = 0; i < 100; i++ )); do
-    echo "$i " | tr -d '\n' && ./Game MrRobb_v2 Dummy Dummy Dummy --seed $i < default1000.cnf > default.out 2> cerr.out && grep "Dummy got top score" cerr.out;
+    RNUM=$(od -An -N4 -tu2 /dev/urandom | awk '{print $1}')
+    echo "$i with seed $RNUM" && ./Game $PLAYER $ENEMY $ENEMY $ENEMY --seed $RNUM < default1000.cnf > default.out 2> cerr.out && grep "$ENEMY got top score" cerr.out;
 done
 
 rm -f cerr.out
