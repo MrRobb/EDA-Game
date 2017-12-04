@@ -32,7 +32,7 @@ struct PLAYER_NAME : public Player {
     ***********************************/
 	void init()
     {
-		my_orks = orks(me());
+    	my_orks = orks(me());
 		my_units = int(my_orks.size());
 
 		if (starting) {
@@ -57,9 +57,148 @@ struct PLAYER_NAME : public Player {
 		return abs(p1.i - p2.i) + abs(p1.j - p2.j);
 	}
 
+	int custom_cost(CellType c)
+	{
+		if (c != CELL_TYPE_SIZE)
+			return cost(c);
+		else
+			return max(cost_sand()*2, max(cost_grass()*2, cost_forest()*2));
+	}
+	
+	static bool compPos(pair<Pos, int> p1, pair<Pos, int> p2)
+	{
+		return p1.second < p2.second;
+	}
+	
+	static bool compEne(pair<Unit, vector<int> > p1, pair<Unit, vector<int> > p2) {
+		if ((p1.second[0] == 1 or p1.second[1] == 1) and p2.second[0] == 0 and p2.second[1] == 0) {
+			// p1 same city/path, p2 not same city/path ---> p1
+			return true;
+		}
+		else if ((p2.second[0] == 1 or p2.second[1] == 1) and p1.second[0] == 0 and p1.second[1] == 0) {
+			// p2 same city/path, p1 not same city/path ---> p2
+			return false;
+		}
+		else {
+			return p1.second[2] < p2.second[2];
+		}
+	}
+	
+	/***********************************
+			 POSSIBILITIES queue
+	 ***********************************/
+	
+	queue<Pos> which_cities(int ork)
+	{
+		vector< pair<Pos, int> > cities(nb_cities());
+		
+		for (int i = 0; i < nb_cities(); i++)
+		{
+			Pos min = city(i)[0];
+			for (auto pos : city(i))
+			{
+				if (manhattan_distance(unit(ork).pos, pos) < manhattan_distance(unit(ork).pos, min))
+				{
+					min = pos;
+				}
+			}
+			cities[i] = make_pair(min, manhattan_distance(min, unit(ork).pos));
+		}
+		
+		sort(cities.begin(), cities.end(), compPos);
+		
+		queue<Pos> q;
+		for (auto p : cities) {
+			if (city_owner(cell(p.first).city_id) != me())
+				q.push(p.first);
+		}
+		
+		return q;
+	}
+	
+	queue<Pos> which_paths(int ork)
+	{
+		vector< pair<Pos, int> > paths(0);
+		
+		for (int i = 0; i < nb_paths(); i++)
+		{
+			for (auto pos : path(i).second)
+				paths.push_back(make_pair(pos, manhattan_distance(pos, unit(ork).pos)));
+		}
+		
+		sort(paths.begin(), paths.end(), compPos);
+		
+		queue<Pos> q;
+		for (auto p : paths) {
+			if (path_owner(cell(p.first).path_id) != me() and cell(p.first).path_id != cell(unit(ork).pos).path_id)
+				q.push(p.first);
+		}
+		
+		return q;
+	}
+	
+	queue<Unit> which_enemies(int ork)
+	{
+		vector< pair<Unit, vector<int> > > enemies(0);
+		
+		for (int i = 0; i < nb_units(); i++) {
+			if (unit(i).player != me()) {
+				vector<int> temp(3);
+				temp[0] = cell(unit(ork).pos).city_id == -1 ? -1 : cell(unit(i).pos).city_id == cell(unit(ork).pos).city_id;	// same city
+				temp[1] = cell(unit(ork).pos).path_id == -1 ? -1 : cell(unit(i).pos).path_id == cell(unit(ork).pos).path_id;	// same path
+				temp[2] = manhattan_distance(unit(i).pos, unit(ork).pos);														// distance
+				enemies.push_back(make_pair(unit(i), temp));
+			}
+		}
+		
+		sort(enemies.begin(), enemies.end(), compEne);
+		
+		queue<Unit> q;
+		for (auto p : enemies) {
+			q.push(p.first);
+		}
+		
+		return q;
+	}
+	
     /***********************************
-            POSSIBILITIES
+			 POSSIBILITIES
     ***********************************/
+	void fill_map(vector< vector<Cell> > &map)
+	{
+		for (int i = 0; i < rows(); i++) {
+			for (int j = 0; j < cols(); j++) {
+				map[i][j] = cell(i, j);
+			}
+		}
+	}
+
+	void place_enemies(vector< vector<Cell> > &map)
+	{
+		for (int i = 0; i < nb_units(); i++)
+		{
+			Unit possible_enemy = unit(i);
+
+			// If its an enemy
+			if (possible_enemy.player != me())
+			{
+				map[possible_enemy.pos.i][possible_enemy.pos.j].type = CELL_TYPE_SIZE;
+
+				if (pos_ok(possible_enemy.pos.i + 1, possible_enemy.pos.j))
+					map[possible_enemy.pos.i + 1][possible_enemy.pos.j].type = CELL_TYPE_SIZE;
+
+				if (pos_ok(possible_enemy.pos.i - 1, possible_enemy.pos.j))
+					map[possible_enemy.pos.i - 1][possible_enemy.pos.j].type = CELL_TYPE_SIZE;
+
+				if (pos_ok(possible_enemy.pos.i, possible_enemy.pos.j + 1))
+					map[possible_enemy.pos.i][possible_enemy.pos.j + 1].type = CELL_TYPE_SIZE;
+
+				if (pos_ok(possible_enemy.pos.i, possible_enemy.pos.j - 1))
+					map[possible_enemy.pos.i][possible_enemy.pos.j - 1].type = CELL_TYPE_SIZE;
+			}
+		}
+	}
+
 	Pos which_city(int ork)
 	{
 		int cell_i = -1;
@@ -92,8 +231,10 @@ struct PLAYER_NAME : public Player {
     {
 		int path_i = -1;
 		int path_j = -1;
+		
 		int ork_i = unit(ork).pos.i;
 		int ork_j = unit(ork).pos.j;
+		
 		for (int i = 0; i < rows(); i++) {
 			for (int j = 0; j < cols(); j++)
 			{
@@ -355,90 +496,132 @@ struct PLAYER_NAME : public Player {
 		return NONE;
 	}
 
+	Dir runaway(Pos myself, Pos enemy, int ork) {
+		if (cell(myself).city_id != -1) {
+			City c = city(cell(myself).city_id);
+			Pos max (-1, -1);
+			for (auto p : c) {
+				if (max.i == -1 or (manhattan_distance(p, enemy) > manhattan_distance(max, enemy))) {
+					max = p;
+				}
+			}
+			if (manhattan_distance(max, enemy) > 2) {
+				cerr << "AVOID" << endl;
+				return find_my_way(myself, max, ork);
+			}
+		}
+		else if (cell(myself).path_id != -1) {
+			cerr << "PATH...SHIT" << endl;
+		}
+		else {
+			cerr << "NO_CITY" << endl;
+		}
+		return NONE;
+	}
+
     /***********************************
                 MAIN BRAIN
     ***********************************/
-	Dir decide_direction(int ork) {
+	Dir decide_direction(int ork)
+	{
 		Dir d = NONE;
-		// cerr << "START WHICH CITY" << endl;
-		Pos c = which_city(ork);
-		// cerr << "FINISH WHICH CITY" << endl;
-		// cerr << "START WHICH PATH" << endl;
-		Pos p = which_path(ork);
-		// cerr << "FINISH WHICH PATH" << endl;
-		// cerr << "START WHICH ENEMY" << endl;
-		Unit e = which_enemy(ork);
-		// cerr << "FINISH WHICH ENEMY" << endl;
-
-		if (my_actions[ork] == 1 and manhattan_distance(e.pos, unit(ork).pos) < 4 and e.health < unit(ork).health) {
-			// cerr << "FIGHT from " << unit(ork).pos << " to " << e.pos << endl;
-			d = find_my_way(unit(ork).pos, e.pos, ork);
+		
+		queue<Pos> cities = which_cities(ork);
+		queue<Pos> paths = which_paths(ork);
+		queue<Unit> enemies = which_enemies(ork);
+		
+		vector< vector<Cell> > map(rows(), vector<Cell> (cols()));
+		fill_map(map);
+		
+		// FIGHT MODE
+		while (d == NONE and my_actions[ork] == 1 and not enemies.empty() and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 4 and enemies.front().health < unit(ork).health) {
+			// cerr << "FIGHT" << endl;
+			d = find_my_way(unit(ork).pos, enemies.front().pos, ork);
+			enemies.pop();
 		}
-		else {
+		
+		// FLIGHT MODE
+		while (d == NONE and my_actions[ork] == 1 and not enemies.empty() and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 4 and enemies.front().health > unit(ork).health) {
+			d = runaway(unit(ork).pos, enemies.front().pos, ork);
+			enemies.pop();
+		}
+		
+		// CONQUER MODE
+		if (d == NONE) {
 			// cerr << "CONQUER" << endl;
-			if (c.i == -1 and c.j == -1 and p.i != -1 and p.j != -1) {
+			if (cities.empty() and not paths.empty()) {
 				// cerr << "NO CITY" << endl;
-				d = find_my_way(unit(ork).pos, p, ork);
+				do {
+					d = find_my_way(unit(ork).pos, paths.front(), ork);
+					paths.pop();
+				} while (d == NONE and not paths.empty());
 			}
-			else if (p.i == -1 and p.j == -1 and c.i != -1 and c.j != -1) {
+			else if (paths.empty() and not cities.empty()) {
 				// cerr << "NO PATH" << endl;
-				d = find_my_way(unit(ork).pos, c, ork);
+				do {
+					d = find_my_way(unit(ork).pos, cities.front(), ork);
+					cities.pop();
+				} while (d == NONE and not cities.empty());
 			}
-			else {
+			else
+			{
 				// cerr << "PATH and CITY" << endl;
 				// EQUAL (default --> city)
 				if (bonus_per_city_cell() == bonus_per_path_cell())
 				{
-					int dist_ork_city = abs(c.i - unit(ork).pos.i) + abs(c.j - unit(ork).pos.j);
-					int dist_ork_path = abs(p.i - unit(ork).pos.i) + abs(p.j - unit(ork).pos.j);
-
-					if (dist_ork_city < dist_ork_path) {
-						// cerr << "GO CITY" << c << endl;
-						d = find_my_way(unit(ork).pos, c, ork);
-						// cerr << "WENT CITY" << endl;
-					}
-					else if (dist_ork_path < dist_ork_city) {
-						// cerr << "GO PATH " << p << endl;
-						d = find_my_way(unit(ork).pos, p, ork);
-						// cerr << "WENT PATH" << endl;
-					}
-					else if (pos_ok(c)) {
-						d = (random(-1, 1) >= 0) ? find_my_way(unit(ork).pos, c, ork) : find_my_way(unit(ork).pos, p, ork);
+					while (d == NONE and not cities.empty() and not paths.empty())
+					{
+						int dist_ork_city = manhattan_distance(cities.front(), unit(ork).pos);
+						int dist_ork_path = manhattan_distance(paths.front(), unit(ork).pos);
+						
+						if (dist_ork_city < dist_ork_path) {
+							d = find_my_way(unit(ork).pos, cities.front(), ork);
+							cities.pop();
+						}
+						else if (dist_ork_path < dist_ork_city) {
+							d = find_my_way(unit(ork).pos, paths.front(), ork);
+							paths.pop();
+						}
+						else {
+							d = find_my_way(unit(ork).pos, cities.front(), ork);
+							cities.pop();
+						}
 					}
 				}
-
-				// CITY
+				
+				// TODO: CITY
 				else if (bonus_per_city_cell() > bonus_per_path_cell())
 				{
-					d = find_my_way(unit(ork).pos, c, ork);
+					d = find_my_way(unit(ork).pos, cities.front(), ork);
 				}
-
-				// PATH
+				
+				// TODO: PATH
 				else {
-					d = find_my_way(unit(ork).pos, p, ork);
+					d = find_my_way(unit(ork).pos, paths.front(), ork);
 				}
 			}
-
+			
 			// Si estoy en una ciudad o un path
 			// cerr << (cell(unit(ork).pos).city_id != -1 or cell(unit(ork).pos).path_id != -1) << endl;
 			// cerr << my_actions.size() << endl;
-			if (cell(unit(ork).pos).city_id != -1 or cell(unit(ork).pos).path_id != -1) {
+			if (cell(unit(ork).pos).city_id != -1 or cell(unit(ork).pos).path_id != -1)
+			{
 				my_actions[ork] = 1;
 			}
 		}
-
-		// cerr << "d: " << d << " " << NONE << endl;
+		
 		return d;
 	}
 
-	/////////////////////////////// MAIN
+    /***********************************
+                    MAIN
+    ***********************************/
     /**
     * Play method, invoked once per each round.
     */
     virtual void play () {
 		init();
 		for (int i = 0; i < my_units; i++) {
-			// cerr << "START COMMAND -> ork: " << i << " of " << my_orks.size() << " vs " << orks(me()).size() << endl;
 			execute(Command(my_orks[i], decide_direction(my_orks[i])));
 			// cerr << "FINISH COMMAND" << endl;
 		}
