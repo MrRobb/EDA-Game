@@ -56,6 +56,14 @@ struct PLAYER_NAME : public Player {
     {
 		return abs(p1.i - p2.i) + abs(p1.j - p2.j);
 	}
+	
+	int points_city(const City &c) {
+		return int(c.size()) * bonus_per_city_cell();
+	}
+	
+	int points_path(const Path &p) {
+		return int(p.second.size()) * bonus_per_path_cell();
+	}
 
 	int custom_cost(CellType c)
 	{
@@ -161,9 +169,6 @@ struct PLAYER_NAME : public Player {
 		return q;
 	}
 	
-    /***********************************
-			 POSSIBILITIES
-    ***********************************/
 	void fill_map(vector< vector<Cell> > &map)
 	{
 		for (int i = 0; i < rows(); i++) {
@@ -172,103 +177,31 @@ struct PLAYER_NAME : public Player {
 			}
 		}
 	}
-
+	
 	void place_enemies(vector< vector<Cell> > &map)
 	{
 		for (int i = 0; i < nb_units(); i++)
 		{
 			Unit possible_enemy = unit(i);
-
+			
 			// If its an enemy
 			if (possible_enemy.player != me())
 			{
 				map[possible_enemy.pos.i][possible_enemy.pos.j].type = CELL_TYPE_SIZE;
-
+				
 				if (pos_ok(possible_enemy.pos.i + 1, possible_enemy.pos.j))
 					map[possible_enemy.pos.i + 1][possible_enemy.pos.j].type = CELL_TYPE_SIZE;
-
+				
 				if (pos_ok(possible_enemy.pos.i - 1, possible_enemy.pos.j))
 					map[possible_enemy.pos.i - 1][possible_enemy.pos.j].type = CELL_TYPE_SIZE;
-
+				
 				if (pos_ok(possible_enemy.pos.i, possible_enemy.pos.j + 1))
 					map[possible_enemy.pos.i][possible_enemy.pos.j + 1].type = CELL_TYPE_SIZE;
-
+				
 				if (pos_ok(possible_enemy.pos.i, possible_enemy.pos.j - 1))
 					map[possible_enemy.pos.i][possible_enemy.pos.j - 1].type = CELL_TYPE_SIZE;
 			}
 		}
-	}
-
-	Pos which_city(int ork)
-	{
-		int cell_i = -1;
-		int cell_j = -1;
-
-		int ork_i = unit(ork).pos.i;
-		int ork_j = unit(ork).pos.j;
-
-		for (int i = 0; i < rows(); i++) {
-			for (int j = 0; j < cols(); j++)
-			{
-				// Get cell
-				Cell temp = cell(i, j);
-
-				// Check if city
-				if (temp.city_id != -1 and city_owner(temp.city_id) != me())
-				{
-					// Distance
-					if (cell_i == -1 or abs(i - ork_i) + abs(j - ork_j) < abs(cell_i - ork_i) + abs(cell_j - ork_j)) {
-						cell_i = i;
-						cell_j = j;
-					}
-				}
-			}
-		}
-		return Pos(cell_i, cell_j);
-	}
-
-	Pos which_path(int ork)
-    {
-		int path_i = -1;
-		int path_j = -1;
-		
-		int ork_i = unit(ork).pos.i;
-		int ork_j = unit(ork).pos.j;
-		
-		for (int i = 0; i < rows(); i++) {
-			for (int j = 0; j < cols(); j++)
-			{
-				// Get cell
-				Cell temp = cell(i, j);
-
-				// Check if city
-				if (temp.path_id != -1 and path_owner(temp.path_id) != me())
-				{
-					// Distance
-					if (path_i == -1 or abs(i - ork_i) + abs(j - ork_j) < abs(path_i - ork_i) + abs(path_j - ork_j)) {
-						path_i = i;
-						path_j = j;
-					}
-				}
-			}
-		}
-
-		return Pos(path_i, path_j);
-	}
-
-	Unit which_enemy(int ork)
-    {
-		Unit enemy;
-		enemy.pos = {-1, -1};
-
-		for (int i = 0; i < nb_units(); i++) {
-			// nearer and (same city or path)
-			if (unit(i).player != me() and ((manhattan_distance(unit(i).pos, unit(ork).pos) < manhattan_distance(enemy.pos, unit(ork).pos) and ((cell(unit(i).pos).city_id == cell(unit(ork).pos).city_id) or (cell(unit(i).pos).path_id == cell(unit(ork).pos).path_id))) or enemy.pos.i == -1)) {
-				enemy = unit(i);
-			}
-		}
-
-		return enemy;
 	}
 
     /***********************************
@@ -550,16 +483,17 @@ struct PLAYER_NAME : public Player {
 		
 		vector< vector<Cell> > map(rows(), vector<Cell> (cols()));
 		fill_map(map);
+		place_enemies(map);
 		
 		// FIGHT MODE
-		while (d == NONE and my_actions[ork] == 1 and not enemies.empty() and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 4 and enemies.front().health < unit(ork).health) {
+		while (d == NONE and not enemies.empty() and my_actions[ork] == 1 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 4 and enemies.front().health <= unit(ork).health) {
 			// cerr << "FIGHT" << endl;
 			d = find_my_way(unit(ork).pos, enemies.front().pos, ork);
 			enemies.pop();
 		}
 		
 		// FLIGHT MODE
-		while (d == NONE and my_actions[ork] == 1 and not enemies.empty() and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 4 and enemies.front().health > unit(ork).health) {
+		while (d == NONE and not enemies.empty() and my_actions[ork] == 1 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 4 and enemies.front().health > unit(ork).health) {
 			d = runaway(unit(ork).pos, enemies.front().pos, ork);
 			enemies.pop();
 		}
