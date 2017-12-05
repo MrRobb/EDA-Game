@@ -506,12 +506,30 @@ struct PLAYER_NAME : public Player {
 				}
 			}
 			if (manhattan_distance(max, enemy) > 2) {
-				cerr << "AVOID" << endl;
 				return find_my_way(myself, max, ork);
 			}
 		}
 		else if (cell(myself).path_id != -1) {
-			cerr << "PATH...SHIT" << endl;
+			Path pa = path(cell(myself).path_id);
+			Pos max (-1, -1);
+			bool found = false;
+			for (int i = 0; i < pa.second.size(); i++) {
+				if (not found and pa.second[i] == myself) {
+					if (i > 0)
+						return find_my_way(myself, pa.second[i - 1], ork);
+					else
+						return NONE;
+				}
+				else if (found and pa.second[i] == myself) {
+					if (i + 1 < pa.second.size())
+						return find_my_way(myself, pa.second[i + 1], ork);
+					else
+						return NONE;
+				}
+				if (pa.second[i] == enemy) {
+					found = true;
+				}
+			}
 		}
 		else {
 			cerr << "NO_CITY" << endl;
@@ -567,37 +585,32 @@ struct PLAYER_NAME : public Player {
 			{
 				// cerr << "PATH and CITY" << endl;
 				// EQUAL (default --> city)
-				if (bonus_per_city_cell() == bonus_per_path_cell())
+				float bonus_cities = 1;
+				float bonus_path = 1;
+				if (bonus_per_path_cell() != 0) {
+					bonus_cities = bonus_per_city_cell() / bonus_per_path_cell();
+				}
+				if (bonus_per_city_cell() != 0) {
+					bonus_path = bonus_per_path_cell() / bonus_per_city_cell();
+				}
+				
+				while (d == NONE and not cities.empty() and not paths.empty())
 				{
-					while (d == NONE and not cities.empty() and not paths.empty())
-					{
-						int dist_ork_city = manhattan_distance(cities.front(), unit(ork).pos);
-						int dist_ork_path = manhattan_distance(paths.front(), unit(ork).pos);
-						
-						if (dist_ork_city < dist_ork_path) {
-							d = find_my_way(unit(ork).pos, cities.front(), ork);
-							cities.pop();
-						}
-						else if (dist_ork_path < dist_ork_city) {
-							d = find_my_way(unit(ork).pos, paths.front(), ork);
-							paths.pop();
-						}
-						else {
-							d = find_my_way(unit(ork).pos, cities.front(), ork);
-							cities.pop();
-						}
+					int dist_ork_city = manhattan_distance(cities.front(), unit(ork).pos) * bonus_cities;
+					int dist_ork_path = manhattan_distance(paths.front(), unit(ork).pos) * bonus_path;
+					
+					if (dist_ork_city < dist_ork_path) {
+						d = find_my_way(unit(ork).pos, cities.front(), ork);
+						cities.pop();
 					}
-				}
-				
-				// TODO: CITY
-				else if (bonus_per_city_cell() > bonus_per_path_cell())
-				{
-					d = find_my_way(unit(ork).pos, cities.front(), ork);
-				}
-				
-				// TODO: PATH
-				else {
-					d = find_my_way(unit(ork).pos, paths.front(), ork);
+					else if (dist_ork_path < dist_ork_city) {
+						d = find_my_way(unit(ork).pos, paths.front(), ork);
+						paths.pop();
+					}
+					else {
+						d = find_my_way(unit(ork).pos, cities.front(), ork);
+						cities.pop();
+					}
 				}
 			}
 			
