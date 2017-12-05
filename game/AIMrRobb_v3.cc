@@ -203,6 +203,24 @@ struct PLAYER_NAME : public Player {
 			}
 		}
 	}
+	
+	bool enemy_in_pos(Pos p, int ork)
+	{
+		for (int i = 0; i < nb_units(); i++) {
+			if (unit(i).player != me() and unit(i).health >= unit(ork).health and
+				(unit(i).pos == p or
+				 unit(i).pos + Pos( 0, 1) == p or
+				 unit(i).pos + Pos( 0,-1) == p or
+				 unit(i).pos + Pos( 1, 0) == p or
+				 unit(i).pos + Pos( 1, 1) == p or
+				 unit(i).pos + Pos( 1,-1) == p or
+				 unit(i).pos + Pos(-1, 0) == p or
+				 unit(i).pos + Pos(-1, 1) == p or
+				 unit(i).pos + Pos(-1,-1) == p))
+				return true;
+		}
+		return false;
+	}
 
     /***********************************
                     A*
@@ -212,7 +230,7 @@ struct PLAYER_NAME : public Player {
 	}
 
 	int h(const Pos &dest, const Pos &now) {
-		return abs(now.i - dest.i) + abs(now.j - dest.j);
+		return manhattan_distance(now, dest);
 	}
 
 	struct Node {
@@ -465,7 +483,20 @@ struct PLAYER_NAME : public Player {
 			}
 		}
 		else {
-			cerr << "NO_CITY" << endl;
+			Pos coord = enemy + Pos(-myself.i, -myself.j);
+			if (coord.i > 0) {
+				return BOTTOM;
+			}
+			if (coord.i < 0) {
+				return TOP;
+			}
+			if (coord.j > 0) {
+				return LEFT;
+			}
+			if (coord.j < 0) {
+				return RIGHT;
+			}
+			cerr << "WTF" << endl;
 		}
 		return NONE;
 	}
@@ -475,29 +506,31 @@ struct PLAYER_NAME : public Player {
     ***********************************/
 	Dir decide_direction(int ork)
 	{
-		Dir d = NONE;
+		Dir d;
 		
+		d = NONE;
+			
 		queue<Pos> cities = which_cities(ork);
 		queue<Pos> paths = which_paths(ork);
 		queue<Unit> enemies = which_enemies(ork);
-		
-		vector< vector<Cell> > map(rows(), vector<Cell> (cols()));
-		fill_map(map);
-		place_enemies(map);
-		
+			
+		//vector< vector<Cell> > map(rows(), vector<Cell> (cols()));
+		//fill_map(map);
+		//place_enemies(map);
+			
 		// FIGHT MODE
-		while (d == NONE and not enemies.empty() and my_actions[ork] == 1 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 4 and enemies.front().health <= unit(ork).health) {
+		while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not enemies.empty() and my_actions[ork] == 1 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and enemies.front().health < unit(ork).health) {
 			// cerr << "FIGHT" << endl;
 			d = find_my_way(unit(ork).pos, enemies.front().pos, ork);
 			enemies.pop();
 		}
-		
+			
 		// FLIGHT MODE
-		while (d == NONE and not enemies.empty() and my_actions[ork] == 1 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 4 and enemies.front().health > unit(ork).health) {
+		while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not enemies.empty() and my_actions[ork] == 1 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and enemies.front().health > unit(ork).health) {
 			d = runaway(unit(ork).pos, enemies.front().pos, ork);
 			enemies.pop();
 		}
-		
+			
 		// CONQUER MODE
 		if (d == NONE) {
 			// cerr << "CONQUER" << endl;
@@ -506,14 +539,14 @@ struct PLAYER_NAME : public Player {
 				do {
 					d = find_my_way(unit(ork).pos, paths.front(), ork);
 					paths.pop();
-				} while (d == NONE and not paths.empty());
+				} while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not paths.empty());
 			}
 			else if (paths.empty() and not cities.empty()) {
 				// cerr << "NO PATH" << endl;
 				do {
 					d = find_my_way(unit(ork).pos, cities.front(), ork);
 					cities.pop();
-				} while (d == NONE and not cities.empty());
+				} while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not cities.empty());
 			}
 			else
 			{
@@ -528,7 +561,7 @@ struct PLAYER_NAME : public Player {
 					bonus_path = bonus_per_path_cell() / bonus_per_city_cell();
 				}
 				
-				while (d == NONE and not cities.empty() and not paths.empty())
+				while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not cities.empty() and not paths.empty())
 				{
 					int dist_ork_city = manhattan_distance(cities.front(), unit(ork).pos) * bonus_cities;
 					int dist_ork_path = manhattan_distance(paths.front(), unit(ork).pos) * bonus_path;
@@ -546,6 +579,16 @@ struct PLAYER_NAME : public Player {
 						cities.pop();
 					}
 				}
+				
+				while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not cities.empty()) {
+					d = find_my_way(unit(ork).pos, cities.front(), ork);
+					cities.pop();
+				}
+				
+				while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not paths.empty()) {
+					d = find_my_way(unit(ork).pos, paths.front(), ork);
+					paths.pop();
+				}
 			}
 			
 			// Si estoy en una ciudad o un path
@@ -556,7 +599,6 @@ struct PLAYER_NAME : public Player {
 				my_actions[ork] = 1;
 			}
 		}
-		
 		return d;
 	}
 
