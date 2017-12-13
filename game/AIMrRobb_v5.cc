@@ -205,6 +205,7 @@ struct PLAYER_NAME : public Player {
 
 	bool enemy_in_pos(Pos p, int ork)
 	{
+		if (cell(p).type == WATER) return true;
 		for (int i = 0; i < nb_units(); i++) {
 			if (unit(i).player != me() and unit(i).health - cost(cell(p).type) >= unit(ork).health and
 				(unit(i).pos == p or
@@ -469,21 +470,6 @@ struct PLAYER_NAME : public Player {
 				if (pa.second[i] == enemy) {
 					found = true;
 				}
-			}
-		}
-		else {
-			Pos coord = enemy + Pos(-myself.i, -myself.j);
-			if (coord.i > 0) {
-				return BOTTOM;
-			}
-			if (coord.i < 0) {
-				return TOP;
-			}
-			if (coord.j > 0) {
-				return LEFT;
-			}
-			if (coord.j < 0) {
-				return RIGHT;
 			}
 		}
 		return NONE;
