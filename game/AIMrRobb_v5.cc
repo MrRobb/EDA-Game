@@ -478,6 +478,14 @@ struct PLAYER_NAME : public Player {
     /***********************************
                 MAIN BRAIN
     ***********************************/
+	int left_cities() {
+		int num = 0;
+		for (int i = 0; i < nb_cities(); i++) {
+			if (city_owner(i) == -1) ++num;
+		}
+		return num;
+	}
+	
 	Dir decide_direction(int ork)
 	{
 		Dir d;
@@ -493,7 +501,7 @@ struct PLAYER_NAME : public Player {
 		//place_enemies(map);
 
 		// FIGHT MODE
-		while ((d == NONE) and not enemies.empty() and my_actions[ork] == 1 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and enemies.front().health < unit(ork).health) {
+		while ((d == NONE) and not enemies.empty() and my_actions[ork] == 1 and ((manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and left_cities() == 0) or (manhattan_distance(enemies.front().pos, unit(ork).pos) <= 3)) and enemies.front().health < unit(ork).health ) {
 			d = find_my_way(unit(ork).pos, enemies.front().pos, ork);
 			enemies.pop();
 		}
@@ -559,7 +567,7 @@ struct PLAYER_NAME : public Player {
 					paths.pop();
 				}
 			}
-
+			
 			// Si estoy en una ciudad o un path
 			if (cell(unit(ork).pos).city_id != -1 or cell(unit(ork).pos).path_id != -1)
 			{
@@ -568,7 +576,6 @@ struct PLAYER_NAME : public Player {
 		}
 		return d;
 	}
-
     /***********************************
                     MAIN
     ***********************************/
@@ -577,8 +584,10 @@ struct PLAYER_NAME : public Player {
     */
     virtual void play () {
 		init();
+		vector<Dir> directions(my_units, NONE);
 		for (int i = 0; i < my_units; i++) {
-			execute(Command(my_orks[i], decide_direction(my_orks[i])));
+			directions[i] = decide_direction(my_orks[i]);
+			execute(Command(my_orks[i], directions[i]));
 		}
     }
 };
