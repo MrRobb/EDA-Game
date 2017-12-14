@@ -56,7 +56,8 @@ struct PLAYER_NAME : public Player {
 		return abs(p1.i - p2.i) + abs(p1.j - p2.j);
 	}
 
-	int points_city(const City &c) {
+	int points_city(const City &c)
+	{
 		return int(c.size()) * bonus_per_city_cell();
 	}
 
@@ -68,8 +69,9 @@ struct PLAYER_NAME : public Player {
 	{
 		if (c != CELL_TYPE_SIZE)
 			return cost(c);
-		else
+		else {
 			return max(cost_sand()*2, max(cost_grass()*2, cost_forest()*2));
+		}
 	}
 
 	static bool compPos(pair<Pos, int> p1, pair<Pos, int> p2)
@@ -94,7 +96,17 @@ struct PLAYER_NAME : public Player {
 	/***********************************
 			 POSSIBILITIES queue
 	 ***********************************/
-
+	
+	int isla(City c) {
+		for (auto pos : c) {
+			if (pos_ok(pos + BOTTOM) and cell(pos + BOTTOM).type == PATH) return 0;
+			if (pos_ok(pos + TOP) and cell(pos + TOP).type == PATH) return 0;
+			if (pos_ok(pos + LEFT) and cell(pos + LEFT).type == PATH) return 0;
+			if (pos_ok(pos + RIGHT) and cell(pos + RIGHT).type == PATH) return 0;
+		}
+		return 100;
+	}
+	
 	queue<Pos> which_cities(int ork)
 	{
 		vector< pair<Pos, int> > cities(nb_cities());
@@ -109,7 +121,7 @@ struct PLAYER_NAME : public Player {
 					min = pos;
 				}
 			}
-			cities[i] = make_pair(min, manhattan_distance(min, unit(ork).pos));
+			cities[i] = make_pair(min, manhattan_distance(min, unit(ork).pos) + isla(city(i)));
 		}
 
 		sort(cities.begin(), cities.end(), compPos);
@@ -567,7 +579,7 @@ struct PLAYER_NAME : public Player {
 					paths.pop();
 				}
 			}
-			
+
 			// Si estoy en una ciudad o un path
 			if (cell(unit(ork).pos).city_id != -1 or cell(unit(ork).pos).path_id != -1)
 			{
@@ -576,6 +588,7 @@ struct PLAYER_NAME : public Player {
 		}
 		return d;
 	}
+
     /***********************************
                     MAIN
     ***********************************/
