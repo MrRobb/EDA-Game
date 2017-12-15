@@ -1,7 +1,5 @@
-make > /dev/null
-
-PLAYER="MrRobb_v5"
-ENEMY="mcasellas"
+PLAYER="MrRobb_v6"
+ENEMY="MrRobb_v5"
 
 echo "\n$PLAYER vs $ENEMY\n"
 
