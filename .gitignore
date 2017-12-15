@@ -7,3 +7,4 @@ game/Game
 *.gch
 *.sh
 *.sh
+game/go2.sh
