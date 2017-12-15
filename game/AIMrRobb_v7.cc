@@ -1,11 +1,12 @@
 #include "Player.hh"
+#include <list>
 
 
 /**
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME MrRobb_v6
+#define PLAYER_NAME MrRobb_v7
 
 
 struct PLAYER_NAME : public Player {
@@ -25,7 +26,7 @@ struct PLAYER_NAME : public Player {
 
 	vector<int> my_orks;
 	vector<int> my_actions;
-	vector< vector<Cell> > map;
+	vector< list< pair<Pos, Dir> > > directions;
 	int my_units;
 
     /***********************************
@@ -43,6 +44,7 @@ struct PLAYER_NAME : public Player {
 				 0 ---> looking for a city
 				 1 ---> fight or flight
 			 */
+			directions = vector< list< pair<Pos, Dir> > >(nb_units());
 			my_actions = vector<int> (nb_units(), -1);
 			for (int i = 0; i < my_units; i++) my_actions[my_orks[i]] = 0;
 			starting = false;
@@ -226,9 +228,8 @@ struct PLAYER_NAME : public Player {
 				 u.pos + Pos(-1, 1) == p or
 				 u.pos + Pos(-1,-1) == p))
 				return true;
-			if (u.player == me() and u.id != ork and u.pos == p) {
+			if (u.player == me() and ork != u.id and p == u.pos)
 				return true;
-			}
 		}
 		return false;
 	}
@@ -410,6 +411,38 @@ struct PLAYER_NAME : public Player {
 		return num;
 	}
 	
+	void moving(int ork, Dir &d) {
+		if (not directions[ork].empty()) {
+			auto po = directions[ork].front();
+			
+			// Si lleva sin moverse un par de rondas
+			for (auto p : directions[ork]) {
+				if (p.first != po.first) return;
+				if (p.second != po.second) return;
+			}
+			
+			// Escoger dir random
+			vector<Dir> v = {BOTTOM, TOP, LEFT, RIGHT};
+			random_shuffle(v.begin(), v.end());
+			int i = 0;
+			while (i < 4 and v[i] != d and not pos_ok(unit(ork).pos + v[i])) {
+				++i;
+			}
+			d = (i == 4 ? NONE : v[i]);
+		}
+	}
+	
+	bool adjacent_free(int city_id, int path_id) {
+		
+		if (city_id != -1) {
+			return true;
+		}
+		if (path_id != -1) {
+			return true;
+		}
+		return false;
+	}
+	
 	Dir decide_direction(int ork)
 	{
 		Dir d;
@@ -430,12 +463,16 @@ struct PLAYER_NAME : public Player {
 		// place_enemies(map);
 		// place_me(map);
 
+		// Si estoy en una ciudad o un path
+		
+		int left_cities = left();
+		
 		// FIGHT MODE
-		while ((d == NONE) and not enemies.empty() and my_actions[ork] == 1 and ((manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and left() == 0) or (manhattan_distance(enemies.front().pos, unit(ork).pos) <= 3)) and enemies.front().health < unit(ork).health ) {
+		while ((d == NONE) and not enemies.empty() and my_actions[ork] == 1 and ((manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and left_cities == 0) or (manhattan_distance(enemies.front().pos, unit(ork).pos) <= 3)) and enemies.front().health < unit(ork).health ) {
 			d = find_my_way(unit(ork).pos, enemies.front().pos, ork);
 			enemies.pop();
 		}
-
+		
 		// FLIGHT MODE
 		while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not enemies.empty() and my_actions[ork] == 1 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and enemies.front().health > unit(ork).health) {
 			d = runaway(unit(ork).pos, enemies.front().pos, ork);
@@ -497,13 +534,15 @@ struct PLAYER_NAME : public Player {
 					paths.pop();
 				}
 			}
-
-			// Si estoy en una ciudad o un path
+			
 			if (cell(unit(ork).pos).city_id != -1 or cell(unit(ork).pos).path_id != -1)
 			{
 				my_actions[ork] = 1;
 			}
 		}
+		
+		// moving(ork, d);
+			
 		return d;
 	}
 
@@ -515,10 +554,11 @@ struct PLAYER_NAME : public Player {
     */
     virtual void play () {
 		init();
-		vector<Dir> directions(my_units, NONE);
 		for (int i = 0; i < my_units; i++) {
-			directions[i] = decide_direction(my_orks[i]);
-			execute(Command(my_orks[i], directions[i]));
+			Dir d = decide_direction(my_orks[i]);
+			// directions[i].push_back(make_pair(unit(my_orks[i]).pos, d));
+			// if (round() >= 4) directions[i].pop_front();
+			execute(Command(my_orks[i], d));
 		}
     }
 };
