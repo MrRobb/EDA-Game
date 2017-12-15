@@ -65,16 +65,7 @@ struct PLAYER_NAME : public Player {
 	int points_path(const Path &p) {
 		return int(p.second.size()) * bonus_per_path_cell();
 	}
-
-	int custom_cost(int i, int j)
-	{
-		if (map[i][j].type != CELL_TYPE_SIZE)
-			return cost(map[i][j].type);
-		else {
-			return 2 * max(cost_sand(), max(cost_grass(), cost_forest()));
-		}
-	}
-
+	
 	static bool compPos(pair<Pos, int> p1, pair<Pos, int> p2)
 	{
 		return p1.second < p2.second;
