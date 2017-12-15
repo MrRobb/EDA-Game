@@ -226,6 +226,8 @@ struct PLAYER_NAME : public Player {
 				 u.pos + Pos(-1, 1) == p or
 				 u.pos + Pos(-1,-1) == p))
 				return true;
+			if (u.player == me() and u.pos == p)
+				return true;
 		}
 		return false;
 	}
