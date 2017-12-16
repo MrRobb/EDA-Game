@@ -132,8 +132,13 @@ struct PLAYER_NAME : public Player {
 
 		for (int i = 0; i < nb_paths(); i++)
 		{
-			for (auto pos : path(i).second)
-				paths.push_back(make_pair(pos, manhattan_distance(pos, unit(ork).pos)));
+			Pos min = path(i).second[0];
+			for (auto pos : path(i).second) {
+				if (manhattan_distance(unit(ork).pos, pos) < manhattan_distance(unit(ork).pos, min)) {
+					min = pos;
+				}
+			}
+			paths.push_back(make_pair(min, manhattan_distance(min, unit(ork).pos)));
 		}
 
 		sort(paths.begin(), paths.end(), compPos);
