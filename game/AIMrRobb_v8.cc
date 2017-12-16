@@ -5,7 +5,7 @@
  * with the same name and .cc extension.
  */
 #define PLAYER_NAME MrRobb_v8
-
+#include <list>
 
 struct PLAYER_NAME : public Player {
 
@@ -26,6 +26,7 @@ struct PLAYER_NAME : public Player {
 	float bonus_path = 1;
 	vector<int> my_orks;
 	vector<int> my_actions;
+	vector< list< pair<Pos, Dir> > > directions;
 	vector< queue< pair<int, int> > > plan;
 	int my_units;
 	Graph graph;
@@ -65,6 +66,7 @@ struct PLAYER_NAME : public Player {
 			}
 			graph = Graph (nb_cities());
 			storeGraph();
+			directions = vector< list< pair<Pos, Dir> > >(nb_units());
 			my_actions = vector<int> (nb_units(), -1);
 			plan = vector< queue< pair<int, int> > > (nb_units());
 			starting = false;
@@ -448,26 +450,26 @@ struct PLAYER_NAME : public Player {
 		return num;
 	}
 	
-//	void moving(int ork, Dir &d) {
-//		if (not directions[ork].empty()) {
-//			auto po = directions[ork].front();
-//
-//			// Si lleva sin moverse un par de rondas
-//			for (auto p : directions[ork]) {
-//				if (p.first != po.first) return;
-//				if (p.second != po.second) return;
-//			}
-//
-//			// Escoger dir random
-//			vector<Dir> v = {BOTTOM, TOP, LEFT, RIGHT};
-//			random_shuffle(v.begin(), v.end());
-//			int i = 0;
-//			while (i < 4 and v[i] != d and not pos_ok(unit(ork).pos + v[i])) {
-//				++i;
-//			}
-//			d = (i == 4 ? NONE : v[i]);
-//		}
-//	}
+	void moving(int ork, Dir &d) {
+		if (not directions[ork].empty()) {
+			auto po = directions[ork].front();
+			
+			// Si lleva sin moverse un par de rondas
+			for (auto p : directions[ork]) {
+				if (p.first != po.first) return;
+				if (p.second != po.second) return;
+			}
+			
+			// Escoger dir random
+			vector<Dir> v = {BOTTOM, TOP, LEFT, RIGHT};
+			random_shuffle(v.begin(), v.end());
+			int i = 0;
+			while (i < 4 and v[i] != d and not pos_ok(unit(ork).pos + v[i])) {
+				++i;
+			}
+			d = (i == 4 ? NONE : v[i]);
+		}
+	}
 	
 	bool adjacent_free(int city_id, int path_id) {
 		
@@ -491,8 +493,8 @@ struct PLAYER_NAME : public Player {
 			return bfs_find_my_way(ork);
 		}
 		
-		if (unit(ork).pos == centerPosToPath(path(plan[ork].front().second))) {
-			return find_my_way(unit(ork).pos, nearestPosToCity(unit(ork).pos, city(plan[ork].front().second)), ork);
+		if (cell(unit(ork).pos).path_id == plan[ork].front().second) {
+			return find_my_way(unit(ork).pos, nearestPosToCity(unit(ork).pos, city(plan[ork].front().first)), ork);
 		}
 		
 		return find_my_way(unit(ork).pos, centerPosToPath(path(plan[ork].front().second)), ork);
@@ -528,7 +530,7 @@ struct PLAYER_NAME : public Player {
 			d = runaway(unit(ork).pos, enemies.front().pos, ork);
 			enemies.pop();
 		}
-
+		
 		// CONQUER MODE
 		
 		if (d == NONE and my_actions[ork] >= 0) {
@@ -554,7 +556,7 @@ struct PLAYER_NAME : public Player {
 			}
 		}
 		
-		// moving(ork, d);
+		moving(ork, d);
 			
 		return d;
 	}
@@ -569,8 +571,8 @@ struct PLAYER_NAME : public Player {
 		init();
 		for (int i = 0; i < my_units; i++) {
 			Dir d = decide_direction(my_orks[i]);
-			// directions[i].push_back(make_pair(unit(my_orks[i]).pos, d));
-			// if (round() >= 4) directions[i].pop_front();
+			directions[i].push_back(make_pair(unit(my_orks[i]).pos, d));
+			if (round() >= 4) directions[i].pop_front();
 			execute(Command(my_orks[i], d));
 		}
     }
