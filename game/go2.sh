@@ -1,3 +1,5 @@
+make > /dev/null
+
 PLAYER="MrRobb_v7"
 ENEMY="MrRobb_v5"
 
