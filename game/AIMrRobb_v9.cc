@@ -134,7 +134,7 @@ struct PLAYER_NAME : public Player {
 		{
 			Pos min = path(i).second[0];
 			for (auto pos : path(i).second) {
-				if (manhattan_distance(unit(ork).pos, pos) < manhattan_distance(unit(ork).pos, min)) {
+				if (manhattan_distance(unit(ork).pos, pos) < manhattan_distance(unit(ork).pos, min) and manhattan_distance(unit(ork).pos, pos) != 0) {
 					min = pos;
 				}
 			}
@@ -144,7 +144,7 @@ struct PLAYER_NAME : public Player {
 		sort(paths.begin(), paths.end(), compPos);
 		
 		for (auto p : paths) {
-			if (path_owner(cell(p.first).path_id) != me() and cell(p.first).path_id != cell(unit(ork).pos).path_id)
+			if (path_owner(cell(p.first).path_id) != me())
 				q.push(p.first);
 		}
 	}
