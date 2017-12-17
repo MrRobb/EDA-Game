@@ -95,13 +95,16 @@ struct PLAYER_NAME : public Player {
 	 ***********************************/
 	
 	int isla(City c) {
+		int value = 0;
+		if (city_owner(cell(c[0]).city_id) != me() and city_owner(cell(c[0]).city_id) != -1)
+			value = 100;
 		for (auto pos : c) {
-			if (pos_ok(pos + BOTTOM) and cell(pos + BOTTOM).type == PATH) return 0;
-			if (pos_ok(pos + TOP) and cell(pos + TOP).type == PATH) return 0;
-			if (pos_ok(pos + LEFT) and cell(pos + LEFT).type == PATH) return 0;
-			if (pos_ok(pos + RIGHT) and cell(pos + RIGHT).type == PATH) return 0;
+			if (pos_ok(pos + BOTTOM) and cell(pos + BOTTOM).type == PATH) return value;
+			if (pos_ok(pos + TOP) and cell(pos + TOP).type == PATH) return value;
+			if (pos_ok(pos + LEFT) and cell(pos + LEFT).type == PATH) return value;
+			if (pos_ok(pos + RIGHT) and cell(pos + RIGHT).type == PATH) return value;
 		}
-		return 100;
+		return 1000;
 	}
 	
 	void which_cities(int ork, queue<Pos> &q)
