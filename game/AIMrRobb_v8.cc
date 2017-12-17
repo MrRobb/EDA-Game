@@ -35,6 +35,15 @@ struct PLAYER_NAME : public Player {
     /***********************************
                 INIT
     ***********************************/
+	void printGraph() {
+		for(int i = 0; i < nb_cities(); i++) {
+			cerr << i << ":";
+			for (auto el : graph[i]) {
+				cerr << " (" << el.first << ", " << el.second << ")";
+			}
+			cerr << endl;
+		}
+	}
 	
 	void storeGraph() {
 		// ciudad_id --> {ciudad_id , path_id}, {ciudad_id, path_id}
@@ -66,6 +75,7 @@ struct PLAYER_NAME : public Player {
 			}
 			graph = Graph (nb_cities());
 			storeGraph();
+			printGraph();
 			directions = vector< list< pair<Pos, Dir> > >(nb_units());
 			my_actions = vector<int> (nb_units(), -1);
 			plan = vector< queue< pair<int, int> > > (nb_units());
@@ -484,20 +494,28 @@ struct PLAYER_NAME : public Player {
 	
 	Dir bfs_find_my_way(int ork)
 	{
-		if (plan[ork].empty()) {
-			return NONE;
+		Pos p = unit(ork).pos;
+		Dir d = directions[ork].front().second;
+		if (not directions[ork].empty()) {
+			if (d != NONE and (cell(p + d).type == CITY or cell(p + d).type == PATH)) {
+				return d;
+			}
+			else {
+				if (d == LEFT) return BOTTOM;
+				if (d == BOTTOM) return RIGHT;
+				if (d == RIGHT) return TOP;
+				return LEFT;
+			}
 		}
-		
-		if (cell(unit(ork).pos).city_id == plan[ork].front().first) {
-			plan[ork].pop();
-			return bfs_find_my_way(ork);
+		return NONE;
+	}
+	
+	void print_queue(queue< pair<int, int> > q) {
+		while (not q.empty()) {
+			cerr << "(" << q.front().first << "-->" << q.front().second << ")" << endl;
+			q.pop();
 		}
-		
-		if (cell(unit(ork).pos).path_id == plan[ork].front().second) {
-			return find_my_way(unit(ork).pos, nearestPosToCity(unit(ork).pos, city(plan[ork].front().first)), ork);
-		}
-		
-		return find_my_way(unit(ork).pos, centerPosToPath(path(plan[ork].front().second)), ork);
+		cerr << endl;
 	}
 	
 	Dir decide_direction(int ork)
@@ -520,16 +538,16 @@ struct PLAYER_NAME : public Player {
 		// Si estoy en una ciudad o un path
 		
 		// FIGHT MODE
-		while ((d == NONE) and not enemies.empty() and my_actions[ork] >= 0 and ((manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and left_cities == 0) or (manhattan_distance(enemies.front().pos, unit(ork).pos) <= 3)) and enemies.front().health < unit(ork).health ) {
-			d = find_my_way(unit(ork).pos, enemies.front().pos, ork);
-			enemies.pop();
-		}
-		
-		// FLIGHT MODE
-		while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not enemies.empty() and my_actions[ork] >= 0 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and enemies.front().health > unit(ork).health) {
-			d = runaway(unit(ork).pos, enemies.front().pos, ork);
-			enemies.pop();
-		}
+//		while ((d == NONE) and not enemies.empty() and my_actions[ork] >= 0 and ((manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and left_cities == 0) or (manhattan_distance(enemies.front().pos, unit(ork).pos) <= 3)) and enemies.front().health < unit(ork).health ) {
+//			d = find_my_way(unit(ork).pos, enemies.front().pos, ork);
+//			enemies.pop();
+//		}
+//
+//		// FLIGHT MODE
+//		while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not enemies.empty() and my_actions[ork] >= 0 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and enemies.front().health > unit(ork).health) {
+//			d = runaway(unit(ork).pos, enemies.front().pos, ork);
+//			enemies.pop();
+//		}
 		
 		// CONQUER MODE
 		
@@ -550,13 +568,14 @@ struct PLAYER_NAME : public Player {
 				cities.pop();
 			}
 			
-			if (cell(unit(ork).pos).city_id != -1) {
+			if (cell(unit(ork).pos).city_id != -1)  {
 				my_actions[ork] = cell(unit(ork).pos).city_id;
 				plan[ork] = bfs(my_actions[ork]);
+				print_queue(plan[ork]);
 			}
 		}
 		
-		moving(ork, d);
+		// moving(ork, d);
 			
 		return d;
 	}
