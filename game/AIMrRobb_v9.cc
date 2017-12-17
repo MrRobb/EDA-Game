@@ -507,8 +507,8 @@ struct PLAYER_NAME : public Player {
 		}
 	}
 	
-	bool adjacent_free(int city_id, int path_id) {
-		
+	bool adjacent_free(int city_id, int path_id)
+	{
 		if (city_id != -1) {
 			return true;
 		}
