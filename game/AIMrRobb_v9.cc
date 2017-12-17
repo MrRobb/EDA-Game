@@ -593,8 +593,12 @@ struct PLAYER_NAME : public Player {
 						d = find_my_way(unit(ork).pos, paths.front(), ork);
 						paths.pop();
 					}
-					else {
+					else if (points_city(cell(cities.front()).city_id) >= points_path(cell(paths.front()).path_id)) {
 						d = find_my_way(unit(ork).pos, cities.front(), ork);
+						cities.pop();
+					}
+					else {
+						d = find_my_way(unit(ork).pos, paths.front(), ork);
 						cities.pop();
 					}
 				}
