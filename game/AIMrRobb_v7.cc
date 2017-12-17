@@ -616,8 +616,6 @@ struct PLAYER_NAME : public Player {
 			}
 		}
 
-		moving(ork, d);
-
 		return d;
 	}
 
