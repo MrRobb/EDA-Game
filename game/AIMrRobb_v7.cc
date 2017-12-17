@@ -294,7 +294,79 @@ struct PLAYER_NAME : public Player {
 
 		return DIR_SIZE;
 	}
-
+	
+	Dir fight_find_my_way(Pos src, Pos dst, int ork) {
+		if (not pos_ok(src)) return DIR_SIZE;
+		if (not pos_ok(dst)) return DIR_SIZE;
+		if (src == dst) return NONE;
+		
+		// Closed list
+		vector< vector<bool> > closedList(rows(), vector<bool> (cols(), false));
+		
+		// Path
+		Node n;
+		n.parent_i = -1;
+		n.parent_j = -1;
+		n.f = INT_MAX;
+		n.g = INT_MAX;
+		n.h = INT_MAX;
+		vector< vector<Node> > cellDetails(rows(), vector<Node> (cols(), n));
+		
+		cellDetails[src.i][src.j].f = 0;
+		cellDetails[src.i][src.j].g = 0;
+		cellDetails[src.i][src.j].h = 0;
+		cellDetails[src.i][src.j].parent_i = src.i;
+		cellDetails[src.i][src.j].parent_j = src.j;
+		
+		set< pair<int, pair<int, int> > > openList;
+		openList.insert(make_pair(0, make_pair(src.i, src.j)));
+		bool foundDest = false;
+		
+		while (not openList.empty()) {
+			pair< int, pair<int, int> > p = *openList.begin();
+			
+			openList.erase(openList.begin());
+			int i = p.second.first;
+			int j = p.second.second;
+			closedList[i][j] = true;
+			
+			int new_f;
+			int new_g;
+			int new_h;
+			
+			vector< pair<int, int> > pos = {{i - 1, j}, {i, j + 1},{i + 1, j},{i, j - 1}};
+			for (int k = 0; k < 4; k++)
+			{
+				if (pos_ok(pos[k].first, pos[k].second) and (cell(pos[k].first, pos[k].second).type == CITY or cell(pos[k].first, pos[k].second).type == PATH)) {
+					if (isDestination(pos[k].first, pos[k].second, dst)) {
+						cellDetails[pos[k].first][pos[k].second].parent_i = i;
+						cellDetails[pos[k].first][pos[k].second].parent_j = j;
+						foundDest = true;
+						return tracePath(cellDetails, dst, src);
+					}
+					
+					else if (not closedList[pos[k].first][pos[k].second]) {
+						new_g = g(cellDetails[i][j].g, Pos(pos[k].first, pos[k].second));
+						new_h = h(dst, Pos(pos[k].first, pos[k].second));
+						new_f = new_g + new_h;
+						
+						if (cellDetails[pos[k].first][pos[k].second].f == INT_MAX or cellDetails[pos[k].first][pos[k].second].f > new_f) {
+							openList.insert(make_pair(new_f, make_pair(pos[k].first, pos[k].second)));
+							
+							cellDetails[pos[k].first][pos[k].second].f = new_f;
+							cellDetails[pos[k].first][pos[k].second].g = new_g;
+							cellDetails[pos[k].first][pos[k].second].h = new_h;
+							cellDetails[pos[k].first][pos[k].second].parent_i = i;
+							cellDetails[pos[k].first][pos[k].second].parent_j = j;
+						}
+					}
+				}
+			}
+		}
+		
+		return NONE;
+	}
+	
 	Dir find_my_way(Pos src, Pos dst, int ork) {
 		if (not pos_ok(src)) return DIR_SIZE;
 		if (not pos_ok(dst)) return DIR_SIZE;
@@ -474,7 +546,7 @@ struct PLAYER_NAME : public Player {
 		
 		// FIGHT MODE
 		while ((d == NONE) and not enemies.empty() and my_actions[ork] == 1 and ((manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and left_cities == 0) or (manhattan_distance(enemies.front().pos, unit(ork).pos) <= 3)) and enemies.front().health < unit(ork).health ) {
-			d = find_my_way(unit(ork).pos, enemies.front().pos, ork);
+			d = fight_find_my_way(unit(ork).pos, enemies.front().pos, ork);
 			enemies.pop();
 		}
 		
@@ -483,7 +555,7 @@ struct PLAYER_NAME : public Player {
 			d = runaway(unit(ork).pos, enemies.front().pos, ork);
 			enemies.pop();
 		}
-
+		
 		// CONQUER MODE
 		if (d == NONE) {
 			if (cities.empty() and not paths.empty()) {
@@ -546,7 +618,7 @@ struct PLAYER_NAME : public Player {
 			}
 		}
 		
-		// moving(ork, d);
+		moving(ork, d);
 			
 		return d;
 	}
