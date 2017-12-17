@@ -59,12 +59,15 @@ struct PLAYER_NAME : public Player {
 		return abs(p1.i - p2.i) + abs(p1.j - p2.j);
 	}
 	
-	int points_city(const City &c)
+	int points_city(int city_id)
 	{
+		City c = city(city_id);
 		return int(c.size()) * bonus_per_city_cell();
 	}
 	
-	int points_path(const Path &p) {
+	int points_path(int path_id)
+	{
+		Path p = path(path_id);
 		return int(p.second.size()) * bonus_per_path_cell();
 	}
 	
