@@ -49,6 +49,16 @@ struct PLAYER_NAME : public Player {
 			for (int i = 0; i < my_units; i++) my_actions[my_orks[i]] = 0;
 			starting = false;
 		}
+		
+		Unit u;
+		for (int i = 0; i < nb_units(); i++)
+		{
+			u = unit(i);
+			if (u.player != me()) {
+				directions[i].push_back(make_pair(u.pos, NONE));
+				if (round() >= 4) directions[i].pop_front();
+			}
+		}
 	}
 	
 	/***********************************
@@ -242,6 +252,21 @@ struct PLAYER_NAME : public Player {
 			if (u.player == me() and ork != u.id and p == u.pos)
 				return true;
 		}
+		return false;
+	}
+	
+	bool enemy_comming(Unit &u, Unit myself, list< pair<Pos, Dir> > &l)
+	{
+		if (manhattan_distance(u.pos, myself.pos) <= 4)
+		{
+			return manhattan_distance(directions[u.id].front().first, directions[myself.id].front().first) > manhattan_distance(directions[u.id].back().first, myself.pos);
+		}
+		
+		else if ((manhattan_distance(u.pos, myself.pos) <= 10 and (cell(u.pos).city_id == cell(myself.pos).city_id or cell(u.pos).path_id == cell(myself.pos).path_id)))
+		{
+			return manhattan_distance(directions[u.id].front().first, directions[myself.id].front().first) > manhattan_distance(directions[u.id].back().first, myself.pos);
+		}
+		
 		return false;
 	}
 	
@@ -454,7 +479,7 @@ struct PLAYER_NAME : public Player {
 					max = p;
 				}
 			}
-			return fight_find_my_way(myself, max, ork);
+			return find_my_way(myself, max, ork);
 		}
 		else if (cell(myself).path_id != -1) {
 			Path pa = path(cell(myself).path_id);
@@ -555,7 +580,7 @@ struct PLAYER_NAME : public Player {
 		}
 		
 		// FLIGHT MODE
-		while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not enemies.empty() and my_actions[ork] == 1 and manhattan_distance(enemies.front().pos, unit(ork).pos) <= 10 and enemies.front().health > unit(ork).health) {
+		while ((d == NONE or enemy_in_pos(unit(ork).pos + d, ork)) and not enemies.empty() and my_actions[ork] == 1 and enemy_comming(enemies.front(), unit(ork), directions[enemies.front().id]) and enemies.front().health > unit(ork).health) {
 			d = runaway(unit(ork).pos, enemies.front().pos, ork);
 			enemies.pop();
 		}
@@ -591,6 +616,7 @@ struct PLAYER_NAME : public Player {
 					int dist_ork_city = manhattan_distance(cities.front(), unit(ork).pos) * bonus_cities;
 					int dist_ork_path = manhattan_distance(paths.front(), unit(ork).pos) * bonus_path;
 					
+					// cerr << ork << ": " << unit(ork).pos << " --> " << cities.front() << " or " << paths.front() << endl;
 					if (dist_ork_city < dist_ork_path) {
 						d = find_my_way(unit(ork).pos, cities.front(), ork);
 						cities.pop();
